@@ -18,4 +18,5 @@ module.exports = {
     providers_pending,
     providers_available,
     service_request_approved,
+    service_request_pending,
 }
