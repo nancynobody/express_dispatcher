@@ -11,8 +11,8 @@ The code is general enough that it can be used/modified for many dispatch-like a
 #### Administrators
 There must be at least one admin number. Admins are responsible for managing the providers and their number will be displayed by the help menu in case providers or receivers have trouble.
 
-**Admin Command/Text Examples**
-If you are an admin you can text any of the following "commands" to the Twilio number
+*Admin Command/Text Examples*
+
 | Command | Description | Example Result |
 |---|---|---|
 | **!showall** | Shows the current list of providers, subscribers, admin, etc. | <img src="img/showall.png" style="width:500px;"/> |
@@ -22,8 +22,8 @@ If you are an admin you can text any of the following "commands" to the Twilio n
 #### Service Providers (therapists, etc)
 Service providers should text **!subscribe** to subscribe to the service. If they are not already on the admin's list of approved providers, they will have to wait for admin approval.
 
-**Service Providers Command/Text Examples**
-If you are a service provider you can text any of the following "commands" to the Twilio number
+*Service Providers Command/Text Examples*
+
 | Command | Description | Example Result |
 |---|---|---|
 | **!subscribe** | This will subscribe you as a service provider (Note: the admin will have to approve you)  | <img src="img/subscribe.png" style="width:500px;"/> |
@@ -34,8 +34,8 @@ If you are a service provider you can text any of the following "commands" to th
 #### Service Receivers (healthcare workers, etc)
 Service receivers are the healthcare workers or whoever is receiving the virtual service.
 
-**Service Providers Command/Text Examples**
-If you are a service provider you can text any of the following "commands" to the Twilio number
+*Service Providers Command/Text Examples*
+
 | Command | Description | Example Result |
 |---|---|---|
 | **0** | This will cancel any pending service requests.  | <img src="img/cancel.png" style="width:500px;"/> |
