@@ -9,6 +9,7 @@ const msg = require('./msg');
 class Handler {
 
   isin(item, list) {  // checks if item is in list
+    // if list == undefined => throw error
     const index = list.indexOf(item);
     if (index > -1) {
       return index;
@@ -56,34 +57,92 @@ class Handler {
   
   // HANDLE SERVICE REQUESTERS //
   start_service_request(num) {
-    let res = this.add(num, db.service_request_pending)
-    
+    let res = this.add(num, db.service_request_pending);
     let provider = this.getRandom(db.providers_available);
-    dlog(`Creating zoom meeting for provider (${provider}) and receiver (${num})`);
-    
-    let zoom_invite = 'Join Zoom Meeting' +
-                      '\n\nhttps://us04web.zoom.us/j/' + 
-                      process.env.ZOOM_ID + '?pwd=' + process.env.ZOOM_PASS + 
-                      '\n\nMeeting ID:' + process.env.ZOOM_ID + '\nPassword: ' + process.env.ZOOM_PASS;
-
-    dlog(`Sending zoom invite to provider (${provider}) and receiver (${num})`);
-    // TODO - send zoom invite
-
-    res = res && this.rmv(num, db.service_request_pending);
-    res = res && this.add((provider, num), db.service_request_approved);
-    return res;
-
-    // TODO - return false if error creating zoom, etc
+    if (provider) {
+      dlog(`Creating zoom meeting for provider (${provider}) and receiver (${num})`);
+      // TODO - set 30min expiration on zoom link (host can extend as needed)
+      let zoom_invite = 'Join Zoom Meeting\n\nhttps://us04web.zoom.us/j/' + 
+                        process.env.ZOOM_ID + '?pwd=' + process.env.ZOOM_PASS;
+      let status_notification = '\nStatus changed to UNAVAILABLE. Dont forget to make yourself available when you are done with this meeting.'
+      sms.send(zoom_invite + status_notification, provider);
+      sms.send(zoom_invite, num);
+      this.rmv(num, db.service_request_pending);
+      this.rmv(provider, db.providers_available);
+      db.service_request_completed.push([provider, num, Date.now()]);
+      dlog('Service Req Complete: ' + db.service_request_approved);
+      return true;
+    } else {
+      this.rmv(num, db.service_request_pending);
+      return false;
+    }
   }
 
-  is_pending_service_request(num) {
-    let res = this.isin(num, db.service_request_pending);
-    return res;
+  has_pending_service_request(num) {
+    dlog(`Looking for ${num} in ${db.service_request_pending}`);
+    if (this.isin(num, db.service_request_pending) === false) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  has_completed_service_request(num) {
+    dlog(`Looking for ${num} in ${db.service_request_completed}`);
+    if (this.meeting_lookup(num) === false) {
+      return false;
+    } else {
+      return true;
+    }
   }
 
   cancel_service_request(num) {
-    let res = this.rmv(num, db.service_request_pending);
-    return res;
+    // TODO - add if (this.has_pending_service_request()) also to double check
+    // TODO - remove hardcodes nums
+    if (this.has_completed_service_request(num)) {
+      dlog(`Completed request found`);
+      let idx = this.meeting_lookup(num);
+      let provider = db.service_request_completed[idx][0];
+      let startTime = db.service_request_completed[idx][2];
+      let currTime = Date.now();
+      if (this.diff_mins(currTime, startTime) > 30) {
+        dlog('You can not cancel service requests older than 30minutes');
+        return false;
+      } else {
+        db.service_request_completed.splice(idx, 1);  // remove service from completed list
+        // let provider know about the cancellation
+        sms.send(`${num} just cancelled their request.`, provider)
+        // TODO - expire the zoom link
+        return true;
+      }
+    } else {
+      dlog('No approved service request found.');
+      return false;
+    }
+  }
+
+  diff_mins(dt2, dt1) {
+    let diff_ms = dt2 - dt1;
+    return (((diff_ms % 86400000) % 3600000) / 60000);
+  }
+
+  diff_hours(dt2, dt1) {
+    let diff_ms = dt2 - dt1;
+    return Math.floor((diff_ms % 86400000) / 3600000);
+  }
+
+  diff_days(dt2, dt1) {
+    let diff_ms = dt2 - dt1;
+    return Math.floor(diff_ms / 86400000);
+  }
+
+  meeting_lookup(num) {
+    for (var i = 0; i < db.service_request_completed.length; i++) {
+      if (db.service_request_completed[i][0] == num || db.service_request_completed[i][1] == num) {
+        return i;
+      }
+    }
+    return false;
   }
 
   // HANDLE SERVICE PROVIDERS (ie SUBSCRIBERS) //
@@ -99,18 +158,19 @@ class Handler {
     else { return true; }
   }
 
+  is_available(num) {
+    let res = this.isin(num, db.providers_available);
+    return res;
+  }
+
   add_subscriber(num) {
     let res = this.add(num, db.providers_subscribed);
     return res;
   }
 
   remove_subscriber(num) {
-    let res = this.rmv(num, db.providers_subscribed);
-    return res;
-  }
-
-  is_available(num) {
-    let res = this.isin(num, db.providers_available);
+    let res = this.rmv(num, db.providers_available);
+    res = res && this.rmv(num, db.providers_subscribed);
     return res;
   }
 
@@ -135,22 +195,25 @@ class Handler {
 
   approve_provider(num) {
     let res = this.add(num, db.providers_approved);
-    // TODO - txt them to let them know they are approved and subscribed
-    return res && this.add_subscriber(num);
+    res = res && this.add_subscriber(num);
+    sms.send('You have been approved and subscribed', num);
+    return res
   }
 
   deny_provider(num) {
-    // unapprove and unsubscribe
     dlog('Removing from approved list and unsubscribing');
     let res = this.rmv(num, db.providers_approved);
     res = res && this.rmv(num, db.providers_subscribed);
+    sms.send('Your subscribe request was denied.', num);
     return res;
   }
 
   request_admin_approval(num) {
-    // TODO send msg to admin requesting to approve/deny this request
-    dlog('TODO - text admin')
-    return true;
+    let res = null;
+    for (var i = 0; i < db.admin.length; i++) {
+      res = sms.send(`${num} is requesting approval to subscribe.\nReply !approve ${num}\nor\n!deny${num}`, db.admin[i])
+    }
+    return res;
   }
 }
 

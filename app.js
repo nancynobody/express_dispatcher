@@ -1,7 +1,7 @@
 const http = require('http');
 const express = require('express');
-const MessagingResponse = require('twilio').twiml.MessagingResponse;
 const bodyParser = require('body-parser');
+const MessagingResponse = require('twilio').twiml.MessagingResponse;
 
 const dlog = require('./logger');
 const handler = require('./handlers');
@@ -23,30 +23,28 @@ app.use(bodyParser.urlencoded({ extended: false }));
 // Incoming sms messages (webhook via ngrok)
 app.post('/sms', (req, res) => {
   const twiml = new MessagingResponse();
-  // TODO - if frm_num isn't provided (undefined), throw error
+  // TODO - if frm_num == undefined => throw error
   let frm_num = req.body.From
 
   if (req.body.Body == '0') {  // 0 - cancel service request
     if (handler.cancel_service_request(frm_num)) {
-      dlog(msg.cancel_service_request_success)
+      dlog(msg.cancel_service_request_success);
       twiml.message(msg.cancel_service_request_success);
     } else {
       dlog(msg.cancel_service_request_fail)
       twiml.message(msg.cancel_service_request_fail);
     }
   } else if (req.body.Body == '1') {  // 1 - start service request
-    if (handler.is_pending_service_request(frm_num)) {
-      dlog(msg.service_request_pending)
-      // twiml.message(msg.service_request_pending)
+    if (handler.has_pending_service_request(frm_num)) {
+      dlog(`${frm_num} already has pending service request.`);
+    } else if (handler.has_completed_service_request(frm_num)) {
+      dlog(`${frm_num} already has approved/active service request.`);
     } else {
-      dlog(msg.service_request_started);
-      twiml.message(msg.service_request_started);
       if (handler.start_service_request(frm_num)) {
-        dlog(msg.service_request_success);
-        twiml.message(msg.service_request_success);
+        dlog('Service request successfully completed.');
       } else {
-        dlog(msg.service_request_failed);
-        twiml.message(msg.service_request_failed);
+        dlog(msg.service_request_fail);
+        twiml.message(msg.service_request_fail);
       }
     }
   } else if (req.body.Body.toLowerCase() == '!showall') {  // show db
@@ -58,6 +56,9 @@ app.post('/sms', (req, res) => {
                 '\nProviders Available: ' + handler.get_providers_available();
       dlog(str);
       twiml.message(str);
+    } else {
+      dlog(msg.admin_only);
+      twiml.message(msg.admin_only);
     }
   } else if (req.body.Body.toLowerCase() == '!subscribe') {  // subscribe as a provider
     if (handler.is_subscribed(frm_num)) {
@@ -88,7 +89,7 @@ app.post('/sms', (req, res) => {
       handler.update_subscriber_status(frm_num, 1);
       twiml.message(msg.provider_status_update_available);
     } else {
-      dlog(provider_status_update_error);
+      dlog(msg.provider_status_update_error);
       twiml.message(msg.provider_status_update_error);
     }
   } else if (req.body.Body.toLowerCase() == '!unavailable') {  // update subscriber status to UNAVAILABLE

@@ -9,17 +9,9 @@ module.exports = {
                 'Note that your subscription request will have to be verified by an admin.' +
                 '\nReply "!unsubscribe" to unsubscribe from the list of service providers. ' +
                 '\n\nPressing anything else will just display this help menu. ',
-    cancel_service_request_success: 'Your request has been cancelled.',
-    cancel_service_request_fail: 'No pending service request found for this number.',
-    service_request_started:  'SERVICE REQUEST RECEIVED' +
-                               '\nChecking with service providers to see who is available to meet with you.' +
-                               '\n\nWhen we find someone to connect you with, we will send you a Zoom link which you can access via video or voice call.' +
-                               'Please note that you can cancel your service request any time by replying "0".',
-    service_request_pending:  'Service request already started. Please wait.',
+    cancel_service_request_success: 'Your request has been cancelled and the provider notified.',
+    cancel_service_request_fail: 'No active service request found for this number. Service requests only remain active for 30minutes',
     service_request_fail:  'We were not able to start your service request.',
-    service_request_success:   'Carly Napelson can meet with you now. ' +
-                                '\nClick the following Zoom link to start your session or use the meeting ID and password provided below.' +
-                                '\nZOOM INFO HERE',
     provider_subscribed: 'You are now SUBSCRIBED as a provider.',
     provider_unsubscribed: 'You are now UNSUBSCRIBED as a provider.',
     provider_not_subscribed: 'You are not currently SUBSCRIBED as a provider',

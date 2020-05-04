@@ -4,7 +4,7 @@ A fast, minimalistic sms dispatching service using Twilio and Zoom
 ## How it Works
 Originally created for virtual dynamic dispatching of therapists for healthcare workers during the COVID-19 Pandemic. The healthcare workers ("receivers") can request a session from a therapist ("providers") by texting "1" to a specific number and then service will find an available therapist and text each of them a Zoom link so they can have a virtual session. 
 
-The avialability of the therapists is also maintained by the system and once subscribed (required admin approval to subscribe) they can mark themselves as available or unavailable at any time.
+The availability of the therapists is also maintained by the system and once subscribed (requires admin approval) they can mark themselves as available or unavailable at any time.
 
 The code is general enough that it can be used/modified for many dispatch-like applications where there are service providers and service receivers. Feel free to use it, modify it, etc.
 
