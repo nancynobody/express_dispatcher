@@ -18,7 +18,8 @@ require('dotenv').config();
 app.use(bodyParser.urlencoded({ extended: false }));
 
 // TODO - only all !showall cmd in debug/dev env
-// TODO - Error handling
+// TODO - Add error handling
+// TODO - Add async smss
 
 // Incoming sms messages (webhook via ngrok)
 app.post('/sms', (req, res) => {
@@ -27,6 +28,7 @@ app.post('/sms', (req, res) => {
   let frm_num = req.body.From
 
   if (req.body.Body == '0') {  // 0 - cancel service request
+    dlog('Service cancellation requested.');
     if (handler.cancel_service_request(frm_num)) {
       dlog(msg.cancel_service_request_success);
       twiml.message(msg.cancel_service_request_success);

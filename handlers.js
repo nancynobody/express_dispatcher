@@ -70,7 +70,7 @@ class Handler {
       this.rmv(num, db.service_request_pending);
       this.rmv(provider, db.providers_available);
       db.service_request_completed.push([provider, num, Date.now()]);
-      dlog('Service Req Complete: ' + db.service_request_approved);
+      dlog('Service Req Complete: ' + db.service_request_completed);
       return true;
     } else {
       this.rmv(num, db.service_request_pending);
@@ -100,23 +100,24 @@ class Handler {
     // TODO - add if (this.has_pending_service_request()) also to double check
     // TODO - remove hardcodes nums
     if (this.has_completed_service_request(num)) {
-      dlog(`Completed request found`);
       let idx = this.meeting_lookup(num);
+      dlog(`Completed request found: ${db.service_request_completed[idx]}`);
       let provider = db.service_request_completed[idx][0];
       let startTime = db.service_request_completed[idx][2];
       let currTime = Date.now();
-      if (this.diff_mins(currTime, startTime) > 30) {
+      let diff = this.diff_mins(currTime, startTime);
+      dlog(`Minutes since start of service request: ${diff}`);
+      if (diff > 30) {
         dlog('You can not cancel service requests older than 30minutes');
         return false;
       } else {
         db.service_request_completed.splice(idx, 1);  // remove service from completed list
-        // let provider know about the cancellation
-        sms.send(`${num} just cancelled their request.`, provider)
+        sms.send(`${num} just cancelled their request.`, provider);
         // TODO - expire the zoom link
         return true;
       }
     } else {
-      dlog('No approved service request found.');
+      dlog('No completed service request found.');
       return false;
     }
   }

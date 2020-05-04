@@ -38,7 +38,7 @@ Service receivers are the healthcare workers or whoever is receiving the virtual
 
 | Command | Description | Example Result |
 |---|---|---|
-| **0** | This will cancel any pending service requests.  | <img src="img/cancel.png" style="width:500px;"/> |
+| **0** | This will cancel any pending service requests.  | <img src="img/cancel.png" style="width:500px;"/><img src="img/cancel_2.png" style="width:500px;"/> |
 | **1** | This will start a service request. | <img src="img/start.png" style="width:500px;"/> |
 
 ## Getting Started
