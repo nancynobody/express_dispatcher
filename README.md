@@ -2,11 +2,11 @@
 A fast, minimalistic sms dispatching service using Twilio and Zoom
 
 ## How it Works
-Originally created for virtual dynamic dispatching of therapists for healthcare workers during the COVID-19 Pandemic. The healthcare workers ("receivers") can request a session from a therapist ("providers") by texting "1" to a specific number and then service will find an available therapist and text each of them a Zoom link so they can have a virtual session. 
+Originally created for virtual dynamic dispatching of therapists for healthcare workers during the COVID-19 Pandemic. The healthcare workers ("receivers") can request a session from a therapist ("providers") by texting "1" (to whatever number you set it up with) and then software will find an available therapist and text each of them a Zoom link so they can have a virtual session. 
 
-The availability of the therapists is also maintained by the system and once subscribed (requires admin approval) they can mark themselves as available or unavailable at any time.
+The availability of the service providers (therapists) is also maintained by the software and once they are subscribed (requires admin approval) they can mark themselves as available or unavailable at any time.
 
-The code is general enough that it can be used/modified for many dispatch-like applications where there are service providers and service receivers. Feel free to use it, modify it, etc.
+The code is general enough that it can be used/modified for many dispatch-like applications where there are service providers and service receivers. Any of the commands that you text to the service are also configurable. Feel free to use it, modify it, etc.
 
 #### Administrators
 There must be at least one admin number. Admins are responsible for managing the providers and their number will be displayed by the help menu in case providers or receivers have trouble.
@@ -34,7 +34,7 @@ Service providers should text **!subscribe** to subscribe to the service. If the
 #### Service Receivers (healthcare workers, etc)
 Service receivers are the healthcare workers or whoever is receiving the virtual service.
 
-*Service Providers Command/Text Examples*
+*Service Receiver Command/Text Examples*
 
 | Command | Description | Example Result |
 |---|---|---|
@@ -47,7 +47,6 @@ Service receivers are the healthcare workers or whoever is receiving the virtual
 
 * [Twilio](https://www.twilio.com/)
 * [Node.js](https://nodejs.org/en/) + [Express.js](https://expressjs.com/)
-* [Serverless](https://www.serverless.com/) - You can use whatever server or serverless service you want here
 * [Zoom](https://zoom.us/)
 
 ### Setup Instructions
@@ -57,8 +56,13 @@ Service receivers are the healthcare workers or whoever is receiving the virtual
 Create a Twilio account and get a Twilio nmber
 
 #### Step 1: Setup Server
+You can use whatever server or serverless setup you want for this depending on your application.
 
-- clone the repo
-- customize what you want your messages to say
-- create .env file and add your Twilio credentials
-- run nodejs app
+Config file includes comtomizations for messages, etc.
+
+Don't forget to add your Twilio credentials to .env
+
+# Next Steps (notes for me)
+* Never got around to adding a front end web interface for eay setup without the need for a developer to spin up a server, probably a nice feature to add.
+
+* Other TODO's including writing test scripts, etc all in src
