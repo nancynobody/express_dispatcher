@@ -65,4 +65,6 @@ Don't forget to add your Twilio credentials to .env
 # Next Steps (notes for me)
 * Never got around to adding a front end web interface for eay setup without the need for a developer to spin up a server, probably a nice feature to add.
 
+* Release version 1.0 after testing and completing TODOs in src.
+
 * Other TODO's including writing test scripts, etc all in src
