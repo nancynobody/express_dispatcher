@@ -2,22 +2,24 @@
 A fast, minimalistic sms dispatching service using Twilio and Zoom
 
 ## How it Works
-Originally created for virtual dynamic dispatching of therapists for healthcare workers during the COVID-19 Pandemic. The healthcare workers ("receivers") can request a session from a therapist ("providers") by texting "1" (to whatever number you set it up with) and then software will find an available therapist and text each of them a Zoom link so they can have a virtual session. 
+Originally created for virtual dynamic dispatching of therapists for healthcare workers during the COVID-19 Pandemic. The healthcare workers ("receivers") can request a session from a therapist ("providers") by texting the Twilio number you set up  and then the software will find an available therapist and text each of them a Zoom link so they can have a virtual session. 
 
-The availability of the service providers (therapists) is also maintained by the software and once they are subscribed (requires admin approval) they can mark themselves as available or unavailable at any time.
+The availability of the service providers (eg. therapists) is also maintained by the software and once they are subscribed (requires admin approval) they can mark themselves as available or unavailable at any time.
 
-The code is general enough that it can be used/modified for many dispatch-like applications where there are service providers and service receivers. Any of the commands that you text to the service are also configurable. Feel free to use it, modify it, etc.
+*Note #1: The code is general enough that it can be used/modified for many dispatch-like applications where there are service providers and service receivers.*
+
+*Note #2: Any of the commands that you text to the service are also configurable. Feel free to use it, modify it, etc.*
 
 #### Administrators
-There must be at least one admin number. Admins are responsible for managing the providers and their number will be displayed by the help menu in case providers or receivers have trouble.
+There must be at least one admin number. Admins are responsible for managing the providers and their number will be displayed by the help menu in case providers or receivers have trouble using the service or have a question.
 
 *Admin Command/Text Examples*
 
 | Command | Description | Example Result |
 |---|---|---|
-| **!showall** | Shows the current list of providers, subscribers, admin, etc. | <img src="img/showall.png" style="width:500px;"/> |
-| **!approve +18505555555** | Approves the +18505555555 number as a provider| <img src="img/approve.png" style="width:500px;"/> |
-| **!deny +18505555555**  | Removed the +18505555555 number from the list of approved providers | <img src="img/deny.png" style="width:500px;"/> |
+| **!showall** | Shows the current list of providers, subscribers, admin, etc. (only accessible to admin) | <img src="img/showall.png" style="width:500px;"/> |
+| **!approve +18505555555** | Approves the +18505555555 number as a provider (only accessible to admin) | <img src="img/approve.png" style="width:500px;"/> |
+| **!deny +18505555555**  | Removed the +18505555555 number from the list of approved providers (only accessible to admin) | <img src="img/deny.png" style="width:500px;"/> |
 
 #### Service Providers (therapists, etc)
 Service providers should text **!subscribe** to subscribe to the service. If they are not already on the admin's list of approved providers, they will have to wait for admin approval.
@@ -50,20 +52,20 @@ Service receivers are the healthcare workers or whoever is receiving the virtual
 * [Zoom](https://zoom.us/)
 
 ### Setup Instructions
-*Note: You will need a paid version of Twilio for this to work because the free trail version only allows usage/verification of 1 number.*
+*Note: You will need a paid version of Twilio for this to work because the free trail version only allows usage/verification of 1 number but you can test it and play with it for free. Btw-Twilio is cheap*
 
 #### Step 0: Setup Twilio
 Create a Twilio account and get a Twilio nmber
 
 #### Step 1: Setup Server
-You can use whatever server or serverless setup you want for this depending on your application.
+You can use whatever server (heroku, aws, etc) or serverless (serverless, etc) setup you want for this...make a decision based on your application needs.
 
-Config file includes comtomizations for messages, etc.
+`config.js` includes comtomizations for messages, etc.
 
-Don't forget to add your Twilio credentials to .env
+Don't forget to add your Twilio credentials to your `.env`
 
 # Next Steps (notes for me)
-* Never got around to adding a front end web interface for eay setup without the need for a developer to spin up a server, probably a nice feature to add.
+* Never got around to adding a front end web interface for easy setup without the need for a developer to spin up a server, probably a nice feature to add.
 
 * Release version 1.0 after testing and completing TODOs in src.
 
