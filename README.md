@@ -64,6 +64,20 @@ You can use whatever server (heroku, aws, etc) or serverless (serverless, etc) s
 
 Don't forget to add your Twilio credentials to your `.env`
 
+If you are just testing you can use ngrok which comes setup by default with Twilio.
+```bash
+twilio login
+twilio phone-numbers:update "+1<your_twilio_#>" --sms-url="http://localhost:1337/sms"
+```
+
+Install [twilio-cli](https://www.twilio.com/docs/sms/quickstart/node#install-the-twilio-cli) also
+
+
+Run script using 
+```bash
+node app.js
+```
+
 # Next Steps (notes for me)
 * Never got around to adding a front end web interface for easy setup without the need for a developer to spin up a server, probably a nice feature to add.
 
