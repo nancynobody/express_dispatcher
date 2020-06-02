@@ -1,5 +1,6 @@
 // TODO - move to db + serverless
 // TODO - reset service request_completed each day
+// TODO - reset providers each week (fish out old or unused numbers)
 
 // TODO (NTH) - create an email at the end of each day to let admin know who is receiving service
 var admin = ['+13236173969'];
