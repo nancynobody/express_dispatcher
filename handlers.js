@@ -1,7 +1,14 @@
+// TODO - break up / chunk
+require('dotenv').config();
 const sms = require('./sms');
 const db = require('./tmp_db');
 const dlog = require('./logger');
-const msg = require('./msg');
+const msg = require('./config').messages;
+
+const prov_status = {
+  'AVAILABLE': 1,
+  'UNAVAILABLE': 0
+};
 
 // TODO - only allow X subscribers at a time
 // TODO - limit the # of service requests per phone num in a specific timeframe
@@ -57,29 +64,54 @@ class Handler {
   
   // HANDLE SERVICE REQUESTERS //
   start_service_request(num) {
-    let res = this.add(num, db.service_request_pending);
-    let provider = this.getRandom(db.providers_available);
-    if (provider) {
-      dlog(`Creating zoom meeting for provider (${provider}) and receiver (${num})`);
-      // TODO - set 30min expiration on zoom link (host can extend as needed)
-      let zoom_invite = 'Join Zoom Meeting\n\nhttps://us04web.zoom.us/j/' + 
-                        process.env.ZOOM_ID + '?pwd=' + process.env.ZOOM_PASS;
-      let status_notification = '\nStatus changed to UNAVAILABLE. Dont forget to make yourself available when you are done with this meeting.'
-      sms.send(zoom_invite + status_notification, provider);
-      sms.send(zoom_invite, num);
-      this.rmv(num, db.service_request_pending);
-      this.rmv(provider, db.providers_available);
-      db.service_request_completed.push([provider, num, Date.now()]);
-      dlog('Service Req Complete: ' + db.service_request_completed);
-      return true;
-    } else {
-      this.rmv(num, db.service_request_pending);
-      return false;
-    }
+    return new Promise((resolve, reject) => {
+      this.add(num, db.service_request_pending);
+      let provider = this.getRandom(db.providers_available);
+      if (provider) {
+        dlog(`Creating zoom meeting for provider (${provider}) and receiver (${num})`);
+        // TODO - set 30min expiration on zoom link (host can extend as needed)
+        let zoom_invite = 'Join Zoom Meeting\n\nhttps://us04web.zoom.us/j/' + 
+                          process.env.ZOOM_ID + '?pwd=' + process.env.ZOOM_PASS;
+        let status_notification = '\nStatus changed to UNAVAILABLE. Dont forget to make yourself available when you are done with this meeting.';
+
+        let send_provider = sms.send(zoom_invite + status_notification, provider)
+                            .then(message => {
+                            //  dlog(message);
+                            this.update_subscriber_status(provider, prov_status.UNAVAILABLE);
+                            });
+          
+        let send_requester = sms.send(zoom_invite, num)
+                             .then(message => {
+                              //  dlog(message);
+                              this.rmv(num, db.service_request_pending)
+                              });
+
+        Promise.all([send_provider, send_requester])
+        .then(() => {
+          db.service_request_completed.push([provider, num, Date.now()]);
+          dlog('Service Req Complete: ' + db.service_request_completed);
+          resolve('Service Request Completed.');
+        })
+        .catch(error => {
+          dlog(`Failed to start service request: ${error}`);
+          dlog('Cleaning up...');
+          this.rmv(provider, db.service_request_pending);
+          this.rmv(num, db.service_request_pending);
+          dlog(`Removed ${provider} and ${num} from pending service requests: ${db.service_request_pending}`);
+          // TODO - text admin to notify them perhaps?
+          this.update_subscriber_status(provider, prov_status.AVAILABLE);
+          // TODO - text provider to let them know
+          reject('Unable to send SMS request to API.');
+        });
+      } else {
+        this.rmv(num, db.service_request_pending);
+        resolve('Sorry, all providers are currently unavailable. Please try again later.');
+      }
+    });
   }
 
   has_pending_service_request(num) {
-    dlog(`Looking for ${num} in ${db.service_request_pending}`);
+    dlog(`Looking for ${num} in pending service requests: ${db.service_request_pending}`);
     if (this.isin(num, db.service_request_pending) === false) {
       return false;
     } else {
@@ -88,7 +120,7 @@ class Handler {
   }
 
   has_completed_service_request(num) {
-    dlog(`Looking for ${num} in ${db.service_request_completed}`);
+    dlog(`Looking for ${num} in completed service requests: ${db.service_request_completed}`);
     if (this.meeting_lookup(num) === false) {
       return false;
     } else {
@@ -96,30 +128,30 @@ class Handler {
     }
   }
 
+  // TODO - add if (this.has_pending_service_request()) also to double check
+  // TODO - remove hardcoded nums
   cancel_service_request(num) {
-    // TODO - add if (this.has_pending_service_request()) also to double check
-    // TODO - remove hardcodes nums
-    if (this.has_completed_service_request(num)) {
-      let idx = this.meeting_lookup(num);
-      dlog(`Completed request found: ${db.service_request_completed[idx]}`);
-      let provider = db.service_request_completed[idx][0];
-      let startTime = db.service_request_completed[idx][2];
-      let currTime = Date.now();
-      let diff = this.diff_mins(currTime, startTime);
-      dlog(`Minutes since start of service request: ${diff}`);
-      if (diff > 30) {
-        dlog('You can not cancel service requests older than 30minutes');
-        return false;
+    return new Promise((resolve, reject) => {
+      if (this.has_completed_service_request(num)) {
+        let idx = this.meeting_lookup(num);
+        dlog(`Completed request found: ${db.service_request_completed[idx]}`);
+        let provider = db.service_request_completed[idx][0];
+        let startTime = db.service_request_completed[idx][2];
+        let diff = this.diff_mins(Date.now(), startTime);
+        dlog(`Minutes since start of service request: ${diff}`);
+        if (diff > 30) {  // service request too old to cancel
+          resolve('You can not cancel service requests older than 30minutes');
+        } else {  // cancelling
+          db.service_request_completed.splice(idx, 1);
+          sms.send(`${num} just cancelled their request.`, provider); // TODO - then+catch
+          // TODO - expire the zoom link
+          resolve('Your service request has been cancelled.');
+        }
       } else {
-        db.service_request_completed.splice(idx, 1);  // remove service from completed list
-        sms.send(`${num} just cancelled their request.`, provider);
-        // TODO - expire the zoom link
-        return true;
+        dlog('No completed service requests found...');
+        resolve('No completed service requests found.');
       }
-    } else {
-      dlog('No completed service request found.');
-      return false;
-    }
+    });
   }
 
   diff_mins(dt2, dt1) {
@@ -138,7 +170,7 @@ class Handler {
   }
 
   meeting_lookup(num) {
-    for (var i = 0; i < db.service_request_completed.length; i++) {
+    for (let i = 0; i < db.service_request_completed.length; i++) {
       if (db.service_request_completed[i][0] == num || db.service_request_completed[i][1] == num) {
         return i;
       }
@@ -176,11 +208,11 @@ class Handler {
   }
 
   update_subscriber_status(num, status) {
-    dlog(`Updating status to ${status}`)
+    dlog('Updating subscriber status.');
     let idx = this.is_available(num);
-    if (status === 1) {
+    if (status === prov_status.AVAILABLE) {
       this.add(num, db.providers_available);
-    } else if (status === 0) {
+    } else if (status === prov_status.UNAVAILABLE) {
       this.rmv(num, db.providers_available);
     } else {
       dlog('invalid status update request');
@@ -215,6 +247,15 @@ class Handler {
       res = sms.send(`${num} is requesting approval to subscribe.\nReply !approve ${num}\nor\n!deny${num}`, db.admin[i])
     }
     return res;
+  }
+
+  // SMS FAILURE CLEANUP //
+  cleanup_sms_delivery_failure(status) {
+    // TODO
+    // If a message can't be delivered check all lists and remove the number from the list
+    // also let provider know if client had a delivery problem
+    // let admin know about the failure?
+    dlog(JSON.stringify(status, null, 2));
   }
 }
 
