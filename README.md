@@ -67,7 +67,7 @@ Don't forget to add your Twilio credentials to your `.env`
 If you are just testing you can use ngrok which comes setup by default with Twilio.
 ```bash
 twilio login
-twilio phone-numbers:update "+1<your_twilio_#>" --sms-url="http://localhost:1337/sms"
+twilio phone-numbers:update "+13342493815" --sms-url="https://localhost/sms"
 ```
 
 Install [twilio-cli](https://www.twilio.com/docs/sms/quickstart/node#install-the-twilio-cli) also
