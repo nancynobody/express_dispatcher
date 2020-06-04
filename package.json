@@ -4,7 +4,7 @@
   "description": "A fast, minimalistic sms dispatcher service using Twilio and Zoom",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -21,6 +21,10 @@
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "http": "0.0.1-security",
-    "twilio": "^3.44.0"
+    "twilio": "^3.44.0",
+    "winston": "^3.2.1"
+  },
+  "devDependencies": {
+    "jest": "^26.0.1"
   }
 }

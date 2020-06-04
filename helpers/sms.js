@@ -1,7 +1,5 @@
 require('dotenv').config();
 
-const dlog = require('./logger');
-
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_ACCOUNT_AUTH;
 const smsUrl = process.env.SMS_URL;
@@ -19,7 +17,7 @@ function send(msg, to) {
       to: to
     })
     .then(message => {  // API request sent
-      dlog(JSON.stringify(message, null, 2));
+      logger.info(JSON.stringify(message, null, 2));
       resolve(message);
     })
     .catch(error => { // API request failure
