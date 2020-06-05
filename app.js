@@ -6,10 +6,10 @@ const MessagingResponse = require('twilio').twiml.MessagingResponse;
 // HELPERS, UTILS, CONFIGS
 const handler = require('./helpers/handler');
 const utils = require('./utils/_');
-const config = require('./config/_');
+const configs = require('./config/_');
 
-const msg = config.msg;
-const cmd = config.cmd;
+const msg = configs.msg;
+const cmd = configs.cmd;
 const logger = config.winston;
 
 const app = express();
@@ -20,7 +20,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 
 // POST - sms messages
 app.post('/sms', (req, res) => {
-  var msg_response = new MessagingResponse();
+  let msg_response = new MessagingResponse();
   let frm_num = req.body.From;
   let body = req.body.Body.toLowerCase();
   if (!frm_num) throw new Error('req.body.From is undefined');
@@ -74,49 +74,21 @@ app.post('/sms', (req, res) => {
         });
         break;
 
-      // case cmd.APPROVE:    // approve a provider (ADMIN ONLY)
-      // if ((m = approve_regex.exec(req.body.Body.toLowerCase())) !== null) {  // approve a provider (ADMIN ONLY)
-      //   let num = null;
-      //   m.forEach((match, groupIndex) => {
-      //     logger.info(`Matched APPROVE cmd - group ${groupIndex}: ${match}`);
-      //     num = '+' + match.split('+')[1];
-      //   });
-      //   logger.info(`Provider number is: ${num}`);
-      //   if (handler.is_admin(frm_num)) {
-      //     logger.info(`Source (${frm_num}) is admin`);
-      //     if (handler.is_approved(num)) {
-      //       logger.info(msg.provider_already_approved); 
-      //       msg_response.message(msg.provider_already_approved); 
-      //     } else {
-      //       handler.approve_provider(num);
-      //       logger.info(msg.provider_approve_success);
-      //       msg_response.message(msg.provider_approve_success);
-      //     }
-      //   } else {
-      //     logger.info(msg.admin_only);
-      //     msg_response.message(msg.admin_only);
-      //   }
-        // break;
-
-      // case cmd.DENY:    // deny a provider (ADMIN ONLY)
-      // if ((m = deny_regex.exec(req.body.Body.toLowerCase())) !== null) {  // deny a provider (ADMIN ONLY)
-      //   let num = null;
-      //   m.forEach((match, groupIndex) => {
-      //     logger.info(`Matched DENY cmd - group ${groupIndex}: ${match}`);
-      //     num = '+' + match.split('+')[1];
-      //   });
-      //   if (handler.is_admin(frm_num)) {
-      //     logger.info(`Source (${frm_num}) is admin`);
-      //     if (handler.deny_provider(num)) {
-      //       msg_response.message(msg.provider_denied_success);
-      //     } else {
-      //       logger.info(`There was an issue denying provider ${num}.`);
-      //     }
-      //   } else {
-      //     logger.info(msg.admin_only);
-      //     msg_response.message(msg.admin_only);
-      //   }
-        // break;
+      // TODO (fix)
+      case configs.app.approve_regex.test(cmd.APPROVE):    // APPROVE/DENY a providers subscription request (ADMIN ONLY)
+      case configs.app.deny_regex.test(cmd.DENY):
+        handler.respond_to_subscription_request(frm_num, body)
+        .then((message) => {
+          msg_response.message(message);
+          logger.info(`Result: \n${msg_response.toString()}`);
+        })
+        .catch((error) => {  // internal error
+          logger.error(error);
+          logger.info('Sending nice error message to requester.');
+          msg_response.message(msg.error);
+          logger.info(`Result: \n${msg_response.toString()}`);
+        });
+        break;
 
       case cmd.SHOW_ALL:    // show db
         handler.handle_show_db(frm_num)

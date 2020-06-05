@@ -3,19 +3,19 @@ const db = require('../helpers/db')
 const sms = require('../helpers/sms')
 
 const utils = require('../utils/_');
-const config = require('../config/_');
+const configs = require('../config/_');
 
-const msg = config.msg;
-const cmd = config.cmd;
+const msg = configs.msg;
+const cmd = configs.cmd;
 
-const logger = config.winston;
+const logger = configs.winston;
 
 // TODO (consider) - only allow X subscribers at a time?
 // TODO (consider) - limit the # of service requests per phone num in a specific timeframe?
 
 class Handler {
   
-  // HANDLE SERVICE REQUESTERS //
+  // HANDLE SERVICE REQUESTS //
   service_request(num, body) {
     if (body == cmd.START_SERVICE_REQ) {
       return this.start_service_request(num);
@@ -27,15 +27,15 @@ class Handler {
   start_service_request(num) {
     return new Promise((resolve, reject) => {
       if (db.has_pending_service_request(num)) {
-        resolve('This number already has a pending service request.');
+        resolve(msg.pending_service_req_found);
       } else if (db.has_completed_service_request(num)) {
-        resolve('This number already has a an completed service request.');
+        resolve(msg.completed_service_req_found);
       } else {
         utils.lists.add(num, db.service_request_pending);
         let provider = utils.lists.get_random(db.providers_available);
         if (provider) {
           logger.info(`Creating zoom meeting for provider (${provider}) and receiver (${num})`);
-          // TODO - set 30min expiration on zoom link (host can extend as needed)
+          // TODO (consider) - set 30min expiration on zoom link (host can extend as needed)
           let zoom_invite = 'Join Zoom Meeting\n\nhttps://us04web.zoom.us/j/' + 
                             process.env.ZOOM_ID + '?pwd=' + process.env.ZOOM_PASS;
           let status_notification = '\nStatus changed to UNAVAILABLE. Dont forget to make yourself available when you are done with this meeting.';
@@ -56,10 +56,10 @@ class Handler {
           .then(() => {
             db.service_request_completed.push([provider, num, Date.now()]);
             logger.info('Service Req Complete: ' + db.service_request_completed);
-            resolve('Service Request Completed.');
+            resolve(msg.service_request_success);
           })
           .catch((error) => {
-            logger.info(`Failed to start service request: ${error}`);
+            logger.error(`Failed to start service request: ${error}`);
             utils.lists.rmv(provider, db.service_request_pending);
             utils.lists.rmv(num, db.service_request_pending);
             logger.info(`Removed ${provider} and ${num} from pending service requests: ${db.service_request_pending}`);
@@ -70,40 +70,39 @@ class Handler {
           });
         } else {
           utils.lists.rmv(num, db.service_request_pending);
-          resolve('Sorry, all providers are currently unavailable. Please try again later.');
+          resolve(msg.no_providers_available);
         }
       }
     });
   }
 
-  // TODO - remove hardcoded nums
   cancel_service_request(num) {
     return new Promise((resolve, reject) => {
       if (db.has_pending_service_request(num)) {
-        resolve('This number already has a pending service request.');
-      } else if (db.has_completed_service_request(num)) {
-        resolve('This number already has a an completed service request.');
+        resolve(msg.pending_service_req_found);
+      // } else if (db.has_completed_service_request(num)) {
+      //   resolve(msg.completed_service_req_found);
       } else {
         let idx = db.meeting_lookup(num)
         if (idx) {
           logger.info(`Completed request found: ${db.service_request_completed[idx]}`);
-          let provider = db.service_request_completed[idx][0]; // TODO (imp) - magic nums
+          let provider = db.service_request_completed[idx][0]; // TODO (imp) - rmv magic nums
           let startTime = db.service_request_completed[idx][2];
           let diff = utils.date_diffs.diff_mins(Date.now(), startTime);
           logger.info(`Minutes since start of service request: ${diff}`);
           if (diff > 30) {  // service request too old to cancel
-            resolve('You can not cancel service requests older than 30minutes');
+            resolve(msg.cancel_service_request_too_old + configs.app.service_time);
           } else {  // cancelling
             db.service_request_completed.splice(idx, 1);
             sms.send(`${num} just cancelled their request.`, provider)
             .catch((error) => {
               reject(error);
             });
-            // TODO - expire the zoom link
-            resolve('Your service request has been cancelled.');
+            // TODO (consider) - expiring the zoom link?
+            resolve(msg.canceL_service_request_success);
           }
         } else {
-          resolve('No completed service requests found.');
+          resolve(msg.completed_service_req_not_found);
         }
       }
     });
@@ -155,14 +154,59 @@ class Handler {
         } else if (status === cmd.UNAVAILABLE) {
           utils.lists.rmv(num, db.providers_available);
         }
-        resolve('Availabiliy updated.');
+        resolve(msg.availability_updated);
       } else {
-        resolve(msg.provider_status_update_error);
+        resolve(msg.availability_update_fail);
       }
     });
   }
 
   // HANDLE ADMIN //
+  respond_to_subscribtion_request(num, body) {
+    return new Promise((resolve, reject) => {
+      resolve('TODO')
+    });
+    // if ((m = approve_regex.exec(req.body.Body.toLowerCase())) !== null) {  // approve a provider (ADMIN ONLY)
+    //   let num = null;
+    //   m.forEach((match, groupIndex) => {
+    //     logger.info(`Matched APPROVE cmd - group ${groupIndex}: ${match}`);
+    //     num = '+' + match.split('+')[1];
+    //   });
+    //   logger.info(`Provider number is: ${num}`);
+    //   if (handler.is_admin(frm_num)) {
+    //     logger.info(`Source (${frm_num}) is admin`);
+    //     if (handler.is_approved(num)) {
+    //       logger.info(msg.provider_already_approved); 
+    //       msg_response.message(msg.provider_already_approved); 
+    //     } else {
+    //       handler.approve_provider(num);
+    //       logger.info(msg.provider_approve_success);
+    //       msg_response.message(msg.provider_approve_success);
+    //     }
+    //   } else {
+    //     logger.info(msg.admin_only);
+    //     msg_response.message(msg.admin_only);
+    //   }
+
+    // if ((m = deny_regex.exec(req.body.Body.toLowerCase())) !== null) {  // deny a provider (ADMIN ONLY)
+    //   let num = null;
+    //   m.forEach((match, groupIndex) => {
+    //     logger.info(`Matched DENY cmd - group ${groupIndex}: ${match}`);
+    //     num = '+' + match.split('+')[1];
+    //   });
+    //   if (handler.is_admin(frm_num)) {
+    //     logger.info(`Source (${frm_num}) is admin`);
+    //     if (handler.deny_provider(num)) {
+    //       msg_response.message(msg.provider_denied_success);
+    //     } else {
+    //       logger.info(`There was an issue denying provider ${num}.`);
+    //     }
+    //   } else {
+    //     logger.info(msg.admin_only);
+    //     msg_response.message(msg.admin_only);
+    //   }
+  }
+
   handle_show_db(num) {
     // TODO - consider only allowing !showall cmd in debug/dev env?
     return new Promise((resolve, reject) => {
