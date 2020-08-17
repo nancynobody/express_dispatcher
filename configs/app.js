@@ -1,4 +1,5 @@
 // General application configs
+// TODO (nth) - nice to have these checks in place
 // const app = {
 //   "admin": {
 //     "min": 1,
@@ -20,12 +21,11 @@
 // };
 
 const service_time = 30;
-const approve_regex = /!approve\s?\+[0-9]{11}/i;
-const deny_regex = /!deny\s?\+[0-9]{11}/i;
+// admin approve/deny command is !approve +13236283344 (or deny keyword for deny)
+const approve_deny_regex = /(!approve|!deny)\s?\+[0-9]{11}/i
 
 module.exports = {
   service_time,
   // app,
-  approve_regex,
-  deny_regex,
+  approve_deny_regex,
 };

@@ -4,6 +4,7 @@ const sms = require('./sms')
 
 const utils = require('../utils/_');
 const configs = require('../configs/_');
+const { reject } = require('lodash');
 
 const msg = configs.msg;
 const cmd = configs.cmd;
@@ -43,13 +44,13 @@ class Handler {
           let send_provider = sms.send(zoom_invite + status_notification, provider)
                               .then(() => {
                               //  logger.info(message);
-                              this.update_subscriber_status(provider, cmd.UNAVAILABLE);
+                              this.update_availability(provider, cmd.UNAVAILABLE);
                               });
             
           let send_requester = sms.send(zoom_invite, num)
                               .then(() => {
                                 //  logger.info(message);
-                                this.rmv(num, db.service_request_pending)
+                                utils.lists.rmv(num, db.service_request_pending)
                                 });
 
           Promise.all([send_provider, send_requester])
@@ -64,7 +65,7 @@ class Handler {
             utils.lists.rmv(num, db.service_request_pending);
             logger.info(`Removed ${provider} and ${num} from pending service requests: ${db.service_request_pending}`);
             // TODO - text admin to notify them perhaps?
-            this.update_subscriber_status(provider, cmd.AVAILABLE);
+            this.update_subscription(provider, cmd.AVAILABLE);
             // TODO - text provider to let them know
             reject('Unable to send SMS request to API.');
           });
@@ -128,8 +129,13 @@ class Handler {
           db.add_subscriber(num);
           resolve(msg.provider_subscribed);
         } else {
-          handler.request_admin_approval(frm_num);  // TOOD (fix) - silent error potential
-          resolve(msg.provider_subscribe_request_pending);
+          this.request_admin_approval(frm_num)  // TOOD (fix) - silent error potential
+          .then(() => {
+            resolve(msg.provider_subscribe_request_pending);
+          })
+          .catch((error) => {
+            reject(error);
+          });
         }
       }
     });
@@ -162,49 +168,27 @@ class Handler {
   }
 
   // HANDLE ADMIN //
-  respond_to_subscribtion_request(num, body) {
+  respond_to_subscription_request(num, body) {
     return new Promise((resolve, reject) => {
-      resolve('TODO')
+      if (db.is_admin(num)) {  // ONLY ADMINS can approve/deny
+        logger.info(`Source (${num}) is admin`);
+        let str_splice = (body.match(configs.app.approve_deny_regex) || {}).input.split("+")
+        if (str_splice[0].includes('approve')) {  // approve
+          let provider = '+'+str_splice[1]
+          if (db.is_approved(provider)) {
+            logger.info(msg.provider_already_approved); 
+            resolve(msg.provider_already_approved); 
+          } else {  // not already approved, so approve
+            return this.approve_provider(provider)
+          }
+        } else {  // deny
+          return this.deny_provider(provider)
+        }
+      } else {  // not ADMIN
+        logger.info(msg.admin_only);
+        resolve(msg.admin_only);
+      }
     });
-    // if ((m = approve_regex.exec(req.body.Body.toLowerCase())) !== null) {  // approve a provider (ADMIN ONLY)
-    //   let num = null;
-    //   m.forEach((match, groupIndex) => {
-    //     logger.info(`Matched APPROVE cmd - group ${groupIndex}: ${match}`);
-    //     num = '+' + match.split('+')[1];
-    //   });
-    //   logger.info(`Provider number is: ${num}`);
-    //   if (handler.is_admin(frm_num)) {
-    //     logger.info(`Source (${frm_num}) is admin`);
-    //     if (handler.is_approved(num)) {
-    //       logger.info(msg.provider_already_approved); 
-    //       msg_response.message(msg.provider_already_approved); 
-    //     } else {
-    //       handler.approve_provider(num);
-    //       logger.info(msg.provider_approve_success);
-    //       msg_response.message(msg.provider_approve_success);
-    //     }
-    //   } else {
-    //     logger.info(msg.admin_only);
-    //     msg_response.message(msg.admin_only);
-    //   }
-
-    // if ((m = deny_regex.exec(req.body.Body.toLowerCase())) !== null) {  // deny a provider (ADMIN ONLY)
-    //   let num = null;
-    //   m.forEach((match, groupIndex) => {
-    //     logger.info(`Matched DENY cmd - group ${groupIndex}: ${match}`);
-    //     num = '+' + match.split('+')[1];
-    //   });
-    //   if (handler.is_admin(frm_num)) {
-    //     logger.info(`Source (${frm_num}) is admin`);
-    //     if (handler.deny_provider(num)) {
-    //       msg_response.message(msg.provider_denied_success);
-    //     } else {
-    //       logger.info(`There was an issue denying provider ${num}.`);
-    //     }
-    //   } else {
-    //     logger.info(msg.admin_only);
-    //     msg_response.message(msg.admin_only);
-    //   }
   }
 
   handle_show_db(num) {
@@ -224,33 +208,50 @@ class Handler {
   }
 
   approve_provider(num) {
-    let res = utils.lists.add(num, db.providers_approved);
-    res = res && db.add_subscriber(num);
-    sms.send('You have been approved and subscribed', num)
-    .catch((error) => {
-      logger.error(`Unable to make API request to notify provider: ${error}`);
-    });
-    return res
+    return new Promise((resolve, reject) => {
+      let res = utils.lists.add(num, db.providers_approved);
+      res = res && db.add_subscriber(num);
+      sms.send('You have been approved and subscribed', num)
+      .then((res) => {
+        resolve(res)
+      })
+      .catch((error) => {
+        logger.error(`Unable to make API request to notify provider: ${error}`);
+        reject(error)
+      });
+    }); 
   }
 
   deny_provider(num) {
-    logger.info('Removing from approved list and unsubscribing');
-    let res = utils.lists.rmv(num, db.providers_approved);
-    res = res && utils.lists.rmv(num, db.providers_subscribed);
-    sms.send('Your subscribe request was denied.', num)
-    .catch((error) => {
-      logger.error(`Unable to make API request to notify provider: ${error}`);
+    return new Promise((resolve, reject) => {
+      logger.info('Removing from approved list and unsubscribing');
+      let res = utils.lists.rmv(num, db.providers_approved);
+      res = res && utils.lists.rmv(num, db.providers_subscribed);
+      sms.send('Your subscribe request was denied.', num)
+      .then((res) => {
+        resolve(res)
+      })
+      .catch((error) => {
+        logger.error(`Unable to make API request to notify provider: ${error}`);
+      });
     });
-    return res;
   }
 
   request_admin_approval(num) {
-    for (var i = 0; i < db.admin.length; i++) {
-      sms.send(`${num} is requesting approval to subscribe.\nReply !approve ${num}\nor\n!deny${num}`, db.admin[i])
+    return new Promise(() => {
+      let send_list = []
+      for (var i = 0; i < db.admin.length; i++) {
+        send_list.push(sms.send(`${num} is requesting approval to subscribe.\nReply !approve ${num}\nor\n!deny${num}`, db.admin[i]))
+      }
+      Promise.all(send_list)
+      .then(() => {
+        resolve(msg.provider_subscribe_request_pending);
+      })
       .catch((error) => {
         logger.error(`Unable to make API request to request_admin_approval: ${error}`);
+        reject('Some admin did not get the message. Trouble sending.');
       });
-    }
+    });
   }
 
   // SMS FAILURE CLEANUP //

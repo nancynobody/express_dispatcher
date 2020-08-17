@@ -74,9 +74,7 @@ app.post('/sms', (req, res) => {
         });
         break;
 
-      // TODO (fix)
-      case configs.app.approve_regex.test(cmd.APPROVE):    // APPROVE/DENY a providers subscription request (ADMIN ONLY)
-      case configs.app.deny_regex.test(cmd.DENY):
+      case (body.match(configs.app.approve_deny_regex) || {}).input:  // APPROVE/DENY a providers subscription request (ADMIN ONLY)
         handler.respond_to_subscription_request(frm_num, body)
         .then((message) => {
           msg_response.message(message);
@@ -114,7 +112,7 @@ app.post('/sms', (req, res) => {
 });
 
 // POST - status update rte
-app.post('/status', function (req, res) {
+app.post('sms/status', function (req, res) {
   logger.info(`Status Update Received: ${JSON.stringify(req.body)}`);
   switch (req.body.SmsStatus.toLowerCase()) {
     // Unused...by default assume success, only handle issues+cleanup 

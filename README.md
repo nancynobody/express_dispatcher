@@ -54,29 +54,29 @@ Service receivers are the healthcare workers or whoever is receiving the virtual
 ### Setup Instructions
 *Note: You will need a paid version of Twilio for this to work because the free trail version only allows usage/verification of 1 number but you can test it and play with it for free.*
 
-#### Step 0: Setup Twilio
-Create a Twilio account and get a Twilio number
+#### Step 0: Setup Twilio and Ngrok
+Create a Twilio account and get a Twilio number. Then use ngrok (or whatever you want) to expose your localhost and give Twilio POST url that ngrok address. (Then when you send an sms to your Twilio phone number ngrok public url will call your localhost.)
 
-#### Step 1: Setup Server
-You can use whatever server (heroku, aws, etc) or serverless you want for this...make a decision based on your application needs.
+Install [twilio-cli](https://www.twilio.com/docs/sms/quickstart/node#install-the-twilio-cli) or my preference is to run it using ngrok manually: `./ngrok http 1337` (if you do this, you have to configure the POST url in Twilio Dashboard)
 
-`config.js` includes customizations for messages, etc.
 
-Don't forget to add your Twilio credentials to your `.env`
-
-If you are just testing you can use ngrok which comes setup by default with Twilio.
 ```bash
+# Start Twilio Cli Example
 twilio login
 twilio phone-numbers:update "+13342493815" --sms-url="https://localhost/sms"
 ```
 
-Install [twilio-cli](https://www.twilio.com/docs/sms/quickstart/node#install-the-twilio-cli) also
-
-
-Run script using 
+Then start the node app
 ```bash
 node app.js
 ```
+
+#### Step 1: Setup Server
+You can use whatever server (heroku, aws, etc) or serverless you want for this...make a decision based on your application needs. I use serverless.
+
+**Note**: `config.js` includes customizations for messages, etc.
+
+**Note**: Don't forget to add your Twilio credentials to your `.env`
 
 # Next Steps (notes for me)
 * Never got around to adding a front end web interface for easy setup without the need for a developer to spin up a server, probably a nice feature to add.
