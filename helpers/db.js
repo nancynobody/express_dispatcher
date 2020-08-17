@@ -1,5 +1,6 @@
 const utils = require('../utils/_');
-const logger = require('../config/winston');
+const configs = require('../configs/_');
+const logger = configs.winston;
 
 // TODO (consider) - migrate to an actual db (or serverless persistant storage)?
 // TODO (consider) - reset service request_completed each day

@@ -1,9 +1,9 @@
 require('dotenv').config();
-const db = require('../helpers/db')
-const sms = require('../helpers/sms')
+const db = require('./db')
+const sms = require('./sms')
 
 const utils = require('../utils/_');
-const configs = require('../config/_');
+const configs = require('../configs/_');
 
 const msg = configs.msg;
 const cmd = configs.cmd;
@@ -208,7 +208,7 @@ class Handler {
   }
 
   handle_show_db(num) {
-    // TODO - consider only allowing !showall cmd in debug/dev env?
+    // TODO (consider) - only allow !showall cmd in debug/dev env?
     return new Promise((resolve, reject) => {
       if (db.is_admin(num)) {
         let str = 'Admin:' + db.admin +

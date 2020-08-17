@@ -1,4 +1,6 @@
 require('dotenv').config();
+const configs = require('../configs/_');
+const logger = configs.winston;
 
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_ACCOUNT_AUTH;

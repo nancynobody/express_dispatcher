@@ -6,11 +6,11 @@ const MessagingResponse = require('twilio').twiml.MessagingResponse;
 // HELPERS, UTILS, CONFIGS
 const handler = require('./helpers/handler');
 const utils = require('./utils/_');
-const configs = require('./config/_');
+const configs = require('./configs/_');
 
 const msg = configs.msg;
 const cmd = configs.cmd;
-const logger = config.winston;
+const logger = configs.winston;
 
 const app = express();
 

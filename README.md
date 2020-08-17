@@ -2,7 +2,7 @@
 A fast, minimalistic sms dispatching service using Twilio and Zoom
 
 ## How it Works
-Originally created for virtual dynamic dispatching of therapists for healthcare workers during the COVID-19 Pandemic. The healthcare workers ("receivers") can request a session from a therapist ("providers") by texting the Twilio number you set up  and then the software will find an available therapist and text each of them a Zoom link so they can have a virtual session. 
+Originally created for virtual dynamic dispatching of therapists for healthcare workers in Tallahassee, FL during the COVID-19 Pandemic. The healthcare workers ("receivers") can request a session from a therapist ("providers") by texting the Twilio number you set up  and then the software will find an available therapist and text each of them a Zoom link so they can have a virtual session. 
 
 The availability of the service providers (eg. therapists) is also maintained by the software and once they are subscribed (requires admin approval) they can mark themselves as available or unavailable at any time.
 
@@ -52,15 +52,15 @@ Service receivers are the healthcare workers or whoever is receiving the virtual
 * [Zoom](https://zoom.us/)
 
 ### Setup Instructions
-*Note: You will need a paid version of Twilio for this to work because the free trail version only allows usage/verification of 1 number but you can test it and play with it for free. Btw-Twilio is cheap*
+*Note: You will need a paid version of Twilio for this to work because the free trail version only allows usage/verification of 1 number but you can test it and play with it for free.*
 
 #### Step 0: Setup Twilio
-Create a Twilio account and get a Twilio nmber
+Create a Twilio account and get a Twilio number
 
 #### Step 1: Setup Server
-You can use whatever server (heroku, aws, etc) or serverless (serverless, etc) setup you want for this...make a decision based on your application needs.
+You can use whatever server (heroku, aws, etc) or serverless you want for this...make a decision based on your application needs.
 
-`config.js` includes comtomizations for messages, etc.
+`config.js` includes customizations for messages, etc.
 
 Don't forget to add your Twilio credentials to your `.env`
 

@@ -24,7 +24,7 @@ const approve_regex = /!approve\s?\+[0-9]{11}/i;
 const deny_regex = /!deny\s?\+[0-9]{11}/i;
 
 module.exports = {
-  service_time
+  service_time,
   // app,
   approve_regex,
   deny_regex,
