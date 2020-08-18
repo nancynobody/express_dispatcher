@@ -11,7 +11,7 @@
     "url": "git+https://github.com/nancynobody/express_dispatcher.git"
   },
   "author": "nancynobody",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/nancynobody/express_dispatcher/issues"
   },
